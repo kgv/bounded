@@ -1,0 +1,17 @@
+[package]
+name = "bounded"
+version = "0.1.0"
+authors = ["kgv <kgv@users.noreply.github.com>"]
+edition = "2018"
+
+[dependencies]
+derive_more = "0.99.5"
+num = { version = "0.2.1", optional = true }
+
+[features]
+# default = []
+default = ["extra-traits"]
+extra-traits = ["num"]
+
+[dev-dependencies]
+anyhow = "1.0.27"
