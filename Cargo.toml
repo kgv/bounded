@@ -1,17 +1,23 @@
 [package]
 name = "bounded"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["kgv <kgv@users.noreply.github.com>"]
 edition = "2018"
+description = "Bounded numeric types"
+readme = "README.md"
+homepage = "https://crates.io/crates/bounded"
+repository = "https://github.com/kgv/bounded"
+license = "MIT OR Apache-2.0"
+keywords = ["data-structure", "integer", "library", "utility", "wrapper"]
+categories = ["data-structures", "rust-patterns"]
 
 [dependencies]
-derive_more = "0.99.5"
+derive_more = "0.99.7"
 num = { version = "0.2.1", optional = true }
 
-[features]
-# default = []
-default = ["extra-traits"]
-extra-traits = ["num"]
-
 [dev-dependencies]
-anyhow = "1.0.27"
+anyhow = "1.0.31"
+
+[features]
+default = []
+extra-traits = ["num"]
