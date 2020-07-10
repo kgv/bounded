@@ -1,298 +1,347 @@
-#![feature(bool_to_option)]
-#![feature(const_generics)]
+#![feature(const_generics, const_panic, const_fn)]
+#![allow(incomplete_features)]
 
-use derive_more::{Deref, DerefMut, Display, From, Into};
 #[cfg(feature = "extra-traits")]
 use num::{CheckedAdd, CheckedSub, Saturating, Zero};
-use std::ops::{
-    Add, AddAssign, Bound, Div, DivAssign, Mul, MulAssign, RangeBounds, Sub, SubAssign,
+use core::ops::{
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Deref, DerefMut,
 };
+use core::fmt::Display;
 
 /// Bounded.
-#[derive(Clone, Copy, Debug, Default, Deref, DerefMut, Display, Eq, From, Into, PartialEq)]
-#[display(fmt = "{}", _0)]
-pub struct Bounded<const MIN: usize, const MAX: usize>(usize);
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct Bounded<T, const MIN: i128, const MAX: i128>(T);
 
-impl<const MIN: usize, const MAX: usize> Bounded<MIN, MAX> {
-    pub fn checked_new(value: usize) -> Option<Self> {
-        (MIN..=MAX).contains(&value).then_some(Self(value))
-    }
-
-    pub fn new(value: usize) -> Self {
-        assert!((MIN..=MAX).contains(&value));
-        Self(value)
+impl<T: Display, const MIN: i128, const MAX: i128> Display for Bounded<T, MIN, MAX> {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        self.0.fmt(f)
     }
 }
 
-impl<const MIN: usize, const MAX: usize> Add for Bounded<MIN, MAX> {
-    type Output = Self;
+impl<T, const MIN: i128, const MAX: i128> Deref for Bounded<T, MIN, MAX> {
+    type Target = T;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        self + rhs.0
+    fn deref(&self) -> &T {
+        &self.0
     }
 }
 
-impl<const MIN: usize, const MAX: usize> Add<usize> for Bounded<MIN, MAX> {
-    type Output = Self;
-
-    fn add(self, rhs: usize) -> Self::Output {
-        Self::new(self.0 + rhs)
+impl<T, const MIN: i128, const MAX: i128> DerefMut for Bounded<T, MIN, MAX> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
     }
 }
 
-impl<const MIN: usize, const MAX: usize> AddAssign for Bounded<MIN, MAX> {
-    fn add_assign(&mut self, rhs: Self) {
-        *self += rhs.0;
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> AddAssign<usize> for Bounded<MIN, MAX> {
-    fn add_assign(&mut self, rhs: usize) {
-        *self = *self + rhs;
-    }
-}
-
-#[cfg(feature = "extra-traits")]
-impl<const MIN: usize, const MAX: usize> CheckedAdd for Bounded<MIN, MAX> {
-    fn checked_add(&self, rhs: &Self) -> Option<Self::Output> {
-        self.0.checked_add(rhs.0).and_then(Self::checked_new)
-    }
-}
-
-#[cfg(feature = "extra-traits")]
-impl<const MIN: usize, const MAX: usize> CheckedSub for Bounded<MIN, MAX> {
-    fn checked_sub(&self, rhs: &Self) -> Option<Self::Output> {
-        self.0.checked_sub(rhs.0).and_then(Self::checked_new)
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> Div for Bounded<MIN, MAX> {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        self / rhs.0
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> Div<usize> for Bounded<MIN, MAX> {
-    type Output = Self;
-
-    fn div(self, rhs: usize) -> Self::Output {
-        // Needn't validate bounds.
-        Self(self.0 / rhs)
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> DivAssign for Bounded<MIN, MAX> {
-    fn div_assign(&mut self, rhs: Self) {
-        *self /= rhs.0;
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> DivAssign<usize> for Bounded<MIN, MAX> {
-    fn div_assign(&mut self, rhs: usize) {
-        *self = *self / rhs;
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> Mul for Bounded<MIN, MAX> {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        self * rhs.0
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> Mul<usize> for Bounded<MIN, MAX> {
-    type Output = Self;
-
-    fn mul(self, rhs: usize) -> Self::Output {
-        Self::new(self.0 * rhs)
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> MulAssign for Bounded<MIN, MAX> {
-    fn mul_assign(&mut self, rhs: Self) {
-        *self *= rhs.0;
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> MulAssign<usize> for Bounded<MIN, MAX> {
-    fn mul_assign(&mut self, rhs: usize) {
-        *self = *self * rhs;
-    }
-}
-
-// impl<const LHS_MIN: usize, const LHS_MAX: usize, const RHS_MIN: usize, const RHS_MAX: usize>
-//     PartialEq<Bounded<RHS_MIN, RHS_MAX>> for Bounded<LHS_MIN, LHS_MAX>
-// {
-//     fn eq(&self, other: &Bounded<RHS_MIN, RHS_MAX>) -> bool {
-//         self.0 == other.0
-//     }
-// }
-// impl<const MIN: usize, const MAX: usize> PartialEq for Bounded<MIN, MAX> {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.0 == other.0
-//     }
-// }
-
-impl<const MIN: usize, const MAX: usize> PartialEq<usize> for Bounded<MIN, MAX> {
-    fn eq(&self, other: &usize) -> bool {
-        self.0 == *other
-    }
-}
-
-#[cfg(feature = "extra-traits")]
-impl<const MIN: usize, const MAX: usize> Saturating for Bounded<MIN, MAX> {
-    fn saturating_add(self, rhs: Self) -> Self {
-        Self::checked_new(self.0.saturating_add(rhs.0)).unwrap_or(Self(MAX))
-    }
-
-    fn saturating_sub(self, rhs: Self) -> Self {
-        Self::checked_new(self.0.saturating_sub(rhs.0)).unwrap_or(Self(MIN))
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> Sub for Bounded<MIN, MAX> {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        self - rhs.0
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> Sub<usize> for Bounded<MIN, MAX> {
-    type Output = Self;
-
-    fn sub(self, rhs: usize) -> Self::Output {
-        Self::new(self.0 - rhs)
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> SubAssign for Bounded<MIN, MAX> {
-    fn sub_assign(&mut self, rhs: Self) {
-        *self -= rhs.0;
-    }
-}
-
-impl<const MIN: usize, const MAX: usize> SubAssign<usize> for Bounded<MIN, MAX> {
-    fn sub_assign(&mut self, rhs: usize) {
-        *self = *self - rhs;
-    }
-}
-
-#[cfg(feature = "extra-traits")]
-impl<const MIN: usize, const MAX: usize> Zero for Bounded<MIN, MAX> {
-    fn zero() -> Self {
-        Self(0)
-    }
-
-    fn is_zero(&self) -> bool {
-        self.0.is_zero()
-    }
-}
-
-#[test]
-fn temp() {
-    fn temp<const MIN: Bound<usize>, const MAX: Bound<usize>>() {
-        let a = 9usize;
-        let b = (Bound::Unbounded, MAX).contains(&a);
-        println!("b: {}", b);
-    }
-
-    temp::<{ Bound::Included(0) }, { Bound::Included(9) }>();
-
-    #[derive(Clone, Copy, Debug, Default, Deref, DerefMut, Display, From, Into)]
-    #[display(fmt = "{}", _0)]
-    pub struct Temp<const MIN: Bound<usize>, const MAX: Bound<usize>>(usize);
-
-    impl<const MIN: Bound<usize>, const MAX: Bound<usize>> Temp<MIN, MAX> {
-        pub fn new(value: usize) -> Temp<MIN, MAX> {
-            assert!((MIN, MAX).contains(&value));
-            Temp(value)
+macro_rules! impl_constructor {
+    ($t:ty) => {
+        impl<const MIN: i128, const MAX: i128> Bounded<$t, MIN, MAX> {
+            pub const INVARIANT: () = {
+                assert!(MIN < MAX);
+                assert!(<$t>::min_value() as i128 >= MIN);
+                assert!(<$t>::max_value() as i128 >= MAX);
+            };
+        
+            pub const fn checked_new(value: $t) -> Option<Self> {
+                let _ = Self::INVARIANT;
+                if (value as i128) < MIN || (value as i128) > MAX {
+                    None
+                } else {
+                    Some(Self(value))
+                }
+            }
+            
+            pub const fn new(value: $t) -> Self {
+                match Self::checked_new(value) {
+                    None => panic!("value out of bounds"),
+                    Some(val) => val,
+                }
+            }
         }
-    }
-
-    Temp::<{ Bound::Included(0) }, { Bound::Included(9) }>::new(9);
-    // println!("a: {:?}", a);
+    };
 }
+
+
+impl_constructor!(u8);
+impl_constructor!(u16);
+impl_constructor!(u32);
+impl_constructor!(u64);
+impl_constructor!(u128);
+impl_constructor!(usize);
+
+impl_constructor!(i8);
+impl_constructor!(i16);
+impl_constructor!(i32);
+impl_constructor!(i64);
+impl_constructor!(i128);
+impl_constructor!(isize);
+
+
+macro_rules! impl_traits {
+    ($t:ty) => {
+
+        impl<const MIN: i128, const MAX: i128> From<$t> for Bounded<$t, MIN, MAX> {
+            fn from(num: $t) -> Self {
+                Self::new(num)
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> From<Bounded<$t, MIN, MAX>> for $t {
+            fn from(num: Bounded<$t, MIN, MAX>) -> Self {
+                num.0
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> Add for Bounded<$t, MIN, MAX> {
+            type Output = Self;
+        
+            fn add(self, rhs: Self) -> Self::Output {
+                self + rhs.0
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> Add<$t> for Bounded<$t, MIN, MAX> {
+            type Output = Self;
+        
+            fn add(self, rhs: $t) -> Self::Output {
+                Self::new(self.0 + rhs)
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> AddAssign for Bounded<$t, MIN, MAX> {
+            fn add_assign(&mut self, rhs: Self) {
+                *self += rhs.0;
+            }
+        }
+        
+        impl<const MIN: i128, const MAX: i128> AddAssign<$t> for Bounded<$t, MIN, MAX> {
+            fn add_assign(&mut self, rhs: $t) {
+                *self = *self + rhs;
+            }
+        }
+
+        #[cfg(feature = "extra-traits")]
+        impl<const MIN: i128, const MAX: i128> CheckedAdd for Bounded<$t, MIN, MAX> {
+            fn checked_add(&self, rhs: &Self) -> Option<Self::Output> {
+                self.0.checked_add(rhs.0).and_then(Self::checked_new)
+            }
+        }
+
+        #[cfg(feature = "extra-traits")]
+        impl<const MIN: i128, const MAX: i128> CheckedSub for Bounded<$t, MIN, MAX> {
+            fn checked_sub(&self, rhs: &Self) -> Option<Self::Output> {
+                self.0.checked_sub(rhs.0).and_then(Self::checked_new)
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> Div for Bounded<$t, MIN, MAX> {
+            type Output = Self;
+        
+            fn div(self, rhs: Self) -> Self::Output {
+                self / rhs.0
+            }
+        }
+        
+        impl<const MIN: i128, const MAX: i128> Div<$t> for Bounded<$t, MIN, MAX> {
+            type Output = Self;
+        
+            fn div(self, rhs: $t) -> Self::Output {
+                // Needn't validate bounds.
+                Self(self.0 / rhs)
+            }
+        }
+        
+        impl<const MIN: i128, const MAX: i128> DivAssign for Bounded<$t, MIN, MAX> {
+            fn div_assign(&mut self, rhs: Self) {
+                *self /= rhs.0;
+            }
+        }
+        
+        impl<const MIN: i128, const MAX: i128> DivAssign<$t> for Bounded<$t, MIN, MAX> {
+            fn div_assign(&mut self, rhs: $t) {
+                *self = *self / rhs;
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> Mul for Bounded<$t, MIN, MAX> {
+            type Output = Self;
+        
+            fn mul(self, rhs: Self) -> Self::Output {
+                self * rhs.0
+            }
+        }
+        
+        impl<const MIN: i128, const MAX: i128> Mul<$t> for Bounded<$t, MIN, MAX> {
+            type Output = Self;
+        
+            fn mul(self, rhs: $t) -> Self::Output {
+                Self::new(self.0 * rhs)
+            }
+        }
+        
+        impl<const MIN: i128, const MAX: i128> MulAssign for Bounded<$t, MIN, MAX> {
+            fn mul_assign(&mut self, rhs: Self) {
+                *self *= rhs.0;
+            }
+        }
+        
+        impl<const MIN: i128, const MAX: i128> MulAssign<$t> for Bounded<$t, MIN, MAX> {
+            fn mul_assign(&mut self, rhs: $t) {
+                *self = *self * rhs;
+            }
+        }
+
+
+        impl<const MIN: i128, const MAX: i128> PartialEq<$t> for Bounded<$t, MIN, MAX> {
+            fn eq(&self, other: &$t) -> bool {
+                self.0 == *other
+            }
+        }
+
+        #[cfg(feature = "extra-traits")]
+        impl<const MIN: i128, const MAX: i128> Saturating for Bounded<$t, MIN, MAX> {
+            fn saturating_add(self, rhs: Self) -> Self {
+                Self::checked_new(self.0.saturating_add(rhs.0)).unwrap_or(Self(MAX as $t))
+            }
+
+            fn saturating_sub(self, rhs: Self) -> Self {
+                Self::checked_new(self.0.saturating_sub(rhs.0)).unwrap_or(Self(MIN as $t))
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> Sub for Bounded<$t, MIN, MAX> {
+            type Output = Self;
+
+            fn sub(self, rhs: Self) -> Self::Output {
+                self - rhs.0
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> Sub<$t> for Bounded<$t, MIN, MAX> {
+            type Output = Self;
+
+            fn sub(self, rhs: $t) -> Self::Output {
+                Self::new(self.0 - rhs)
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> SubAssign for Bounded<$t, MIN, MAX> {
+            fn sub_assign(&mut self, rhs: Self) {
+                *self -= rhs.0;
+            }
+        }
+
+        impl<const MIN: i128, const MAX: i128> SubAssign<$t> for Bounded<$t, MIN, MAX> {
+            fn sub_assign(&mut self, rhs: $t) {
+                *self = *self - rhs;
+            }
+        }
+
+        #[cfg(feature = "extra-traits")]
+        impl<const MIN: i128, const MAX: i128> Zero for Bounded<$t, MIN, MAX> {
+            fn zero() -> Self {
+                Self(0)
+            }
+
+            fn is_zero(&self) -> bool {
+                self.0.is_zero()
+            }
+        }
+
+    };
+}
+
+impl_traits!(u8);
+impl_traits!(u16);
+impl_traits!(u32);
+impl_traits!(u64);
+impl_traits!(u128);
+impl_traits!(usize);
+
+impl_traits!(i8);
+impl_traits!(i16);
+impl_traits!(i32);
+impl_traits!(i64);
+impl_traits!(i128);
+impl_traits!(isize);
 
 #[cfg(test)]
 mod tests {
     use super::Bounded;
 
+    type ZeroToTen = Bounded<u8, 0, 9>;
+
     mod ok {
-        use super::Bounded;
+        use super::ZeroToTen;
         #[cfg(feature = "extra-traits")]
         use num::{CheckedAdd, CheckedSub, Saturating};
 
         #[test]
         fn add() {
-            assert_eq!(Bounded::<0, 9>::new(9), Bounded::new(8) + Bounded::new(1));
+            assert_eq!(ZeroToTen::new(9), ZeroToTen::new(8) + ZeroToTen::new(1));
         }
 
         #[test]
         fn add_assign() {
-            let mut a = Bounded::<0, 9>::new(8);
-            a += Bounded::new(1);
-            assert_eq!(Bounded::new(9), a);
+            let mut a = ZeroToTen::new(8);
+            a += ZeroToTen::new(1);
+            assert_eq!(ZeroToTen::new(9), a);
         }
 
         #[test]
         fn div() {
-            assert_eq!(Bounded::<0, 9>::new(0), Bounded::new(0) / Bounded::new(1));
+            assert_eq!(ZeroToTen::new(0), ZeroToTen::new(0) / ZeroToTen::new(1));
         }
 
         #[test]
         fn div_assign() {
-            let mut a = Bounded::<0, 9>::new(0);
-            a /= Bounded::new(1);
-            assert_eq!(Bounded::new(0), a);
+            let mut a = ZeroToTen::new(0);
+            a /= ZeroToTen::new(1);
+            assert_eq!(ZeroToTen::new(0), a);
         }
 
         #[cfg(feature = "extra-traits")]
         #[test]
         fn checked_add() {
             assert_eq!(
-                Some(Bounded::<0, 9>::new(9)),
-                Bounded::new(8).checked_add(&Bounded::new(1))
+                Some(ZeroToTen::new(9)),
+                ZeroToTen::new(8).checked_add(&ZeroToTen::new(1))
             );
-            assert_eq!(None, Bounded::<0, 9>::new(9).checked_add(&Bounded::new(1)));
+            assert_eq!(None, ZeroToTen::new(9).checked_add(&ZeroToTen::new(1)));
         }
 
         #[cfg(feature = "extra-traits")]
         #[test]
         fn checked_sub() {
             assert_eq!(
-                Some(Bounded::<0, 9>::new(0)),
-                Bounded::new(1).checked_sub(&Bounded::new(1))
+                Some(ZeroToTen::new(0)),
+                ZeroToTen::new(1).checked_sub(&ZeroToTen::new(1))
             );
-            assert_eq!(None, Bounded::<0, 9>::new(0).checked_sub(&Bounded::new(1)));
+            assert_eq!(None, ZeroToTen::new(0).checked_sub(&ZeroToTen::new(1)));
         }
 
         #[test]
         fn mul() {
-            assert_eq!(Bounded::<0, 9>::new(9), Bounded::new(9) * Bounded::new(1));
+            assert_eq!(ZeroToTen::new(9), ZeroToTen::new(9) * ZeroToTen::new(1));
         }
 
         #[test]
         fn mul_assign() {
-            let mut a = Bounded::<0, 9>::new(9);
-            a *= Bounded::new(1);
-            assert_eq!(Bounded::new(9), a);
+            let mut a = ZeroToTen::new(9);
+            a *= ZeroToTen::new(1);
+            assert_eq!(ZeroToTen::new(9), a);
         }
 
         #[test]
         fn new() {
-            assert_eq!(1, *Bounded::<0, 2>::new(1));
+            assert_eq!(1, *crate::Bounded::<u8, 0, 2>::new(1));
         }
 
         #[cfg(feature = "extra-traits")]
         #[test]
         fn saturating_add() {
             assert_eq!(
-                Bounded::<0, 9>::new(9),
-                Bounded::new(9).saturating_add(Bounded::new(1))
+                ZeroToTen::new(9),
+                ZeroToTen::new(9).saturating_add(ZeroToTen::new(1))
             );
         }
 
@@ -300,83 +349,83 @@ mod tests {
         #[test]
         fn saturating_sub() {
             assert_eq!(
-                Bounded::<0, 9>::new(0),
-                Bounded::new(0).saturating_sub(Bounded::new(1))
+                ZeroToTen::new(0),
+                ZeroToTen::new(0).saturating_sub(ZeroToTen::new(1))
             );
         }
 
         #[test]
         fn sub() {
-            assert_eq!(Bounded::<0, 9>::new(0), Bounded::new(1) - Bounded::new(1));
+            assert_eq!(ZeroToTen::new(0), ZeroToTen::new(1) - ZeroToTen::new(1));
         }
 
         #[test]
         fn sub_assign() {
-            let mut a = Bounded::<0, 9>::new(1);
-            a -= Bounded::new(1);
-            assert_eq!(Bounded::new(0), a);
+            let mut a = ZeroToTen::new(1);
+            a -= ZeroToTen::new(1);
+            assert_eq!(ZeroToTen::new(0), a);
         }
     }
 
     mod panic {
-        use super::Bounded;
+        use super::ZeroToTen;
 
         #[test]
         #[should_panic]
         fn add() {
-            let _ = Bounded::<0, 9>::new(9) + Bounded::new(1);
+            let _ = ZeroToTen::new(9) + ZeroToTen::new(1);
         }
 
         #[test]
         #[should_panic]
         fn add_assign() {
-            let mut a = Bounded::<0, 9>::new(9);
-            a += Bounded::new(1);
+            let mut a = ZeroToTen::new(9);
+            a += ZeroToTen::new(1);
         }
 
         #[test]
         #[should_panic]
         fn div() {
-            let _ = Bounded::<0, 9>::new(9) / Bounded::new(0);
+            let _ = ZeroToTen::new(9) / ZeroToTen::new(0);
         }
 
         #[test]
         #[should_panic]
         fn div_assign() {
-            let mut a = Bounded::<0, 9>::new(9);
-            a /= Bounded::new(0);
+            let mut a = ZeroToTen::new(9);
+            a /= ZeroToTen::new(0);
         }
 
         #[test]
         #[should_panic]
         fn mul() {
-            let _ = Bounded::<0, 9>::new(5) * Bounded::new(2);
+            let _ = ZeroToTen::new(5) * ZeroToTen::new(2);
         }
 
         #[test]
         #[should_panic]
         fn mul_assign() {
-            let mut a = Bounded::<0, 9>::new(5);
-            a *= Bounded::new(2);
+            let mut a = ZeroToTen::new(5);
+            a *= ZeroToTen::new(2);
         }
 
         #[test]
         #[should_panic]
         fn new() {
-            let _ = Bounded::<0, 9>::new(10);
+            let _ = ZeroToTen::new(10);
         }
 
         #[test]
         #[should_panic]
         fn sub() {
-            let _ = Bounded::<0, 9>::new(0) - Bounded::new(1);
+            let _ = ZeroToTen::new(0) - ZeroToTen::new(1);
         }
 
         #[test]
         #[should_panic]
         fn sub_assign() {
-            let mut a = Bounded::<0, 9>::new(0);
-            a -= Bounded::new(1);
+            let mut a = ZeroToTen::new(0);
+            a -= ZeroToTen::new(1);
         }
     }
 }

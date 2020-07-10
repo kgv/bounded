@@ -12,11 +12,7 @@ keywords = ["data-structure", "integer", "library", "utility", "wrapper"]
 categories = ["data-structures", "rust-patterns"]
 
 [dependencies]
-derive_more = "0.99.7"
 num = { version = "0.2.1", optional = true }
-
-[dev-dependencies]
-anyhow = "1.0.31"
 
 [features]
 default = []
