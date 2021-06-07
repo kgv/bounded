@@ -1,6 +1,6 @@
 [package]
 name = "bounded"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["kgv <kgv@users.noreply.github.com>"]
 edition = "2018"
 description = "Bounded numeric types"
