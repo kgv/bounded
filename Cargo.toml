@@ -12,12 +12,40 @@ keywords = ["data-structure", "integer", "library", "utility", "wrapper"]
 categories = ["data-structures", "rust-patterns"]
 
 [dependencies]
-derive_more = "0.99.7"
-num = { version = "0.2.1", optional = true }
+num-traits = { version = "0.2.14", optional = true }
 
 [dev-dependencies]
-anyhow = "1.0.31"
+anyhow = "1.0.40"
 
 [features]
 default = []
-extra-traits = ["num"]
+extra-traits = ["bounded", "checked", "saturating"]
+bounded = ["num-traits"]
+checked = [
+    "checked-add",
+    "checked-div",
+    "checked-mul",
+    "checked-neg",
+    "checked-rem",
+    "checked-shl",
+    "checked-shr",
+    "checked-sub",
+]
+checked-add = ["num-traits"]
+checked-div = ["num-traits"]
+checked-mul = ["num-traits"]
+checked-neg = ["num-traits"]
+checked-rem = ["num-traits"]
+checked-shl = ["num-traits"]
+checked-shr = ["num-traits"]
+checked-sub = ["num-traits"]
+saturating = [
+    "saturating-add",
+    "saturating-div",
+    "saturating-mul",
+    "saturating-sub",
+]
+saturating-add = ["num-traits"]
+saturating-div = ["num-traits"]
+saturating-mul = ["num-traits"]
+saturating-sub = ["num-traits"]
